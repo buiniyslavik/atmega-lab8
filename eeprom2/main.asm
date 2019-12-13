@@ -16,8 +16,8 @@
   out sph,r16 
 
   ;comp init
-  ldi ACSR, (1<<ACD)|(1<<ACBG)|(1<<ACIS1)|(1<<ACIE)
-
+  ldi r16, (1<<ACBG)|(1<<ACIS1)|(1<<ACIE)
+  out ACSR, r16
     ; set portB OUT
   ldi r16,0xFF 
   out DDRB,r16 
@@ -29,18 +29,22 @@
   call EEPROM_read
 
   ; uart init
+  ldi r16, high(UBRR0_value) 
+  sts UBRR0H, r16 
+  ldi r16, low(UBRR0_value) 
+  sts UBRR0L, r16 
   ldi r16, (1<<TXEN0)|(1<<RXEN0)|(1<<RXCIE0)           
   sts UCSR0B,R16 
   ldi r16,(1<< UCSZ00)|(1<< UCSZ01) 
   sts UCSR0C,R16
 
-
+  sei
 
   main: jmp main
 
   EEPROM_write:
-; sbic EECR,EEPE
-; rjmp EEPROM_write
+ sbic EECR,EEPE
+ rjmp EEPROM_write
  out EEARH, r25
  out EEARL, r24
  out EEDR,r23
@@ -49,8 +53,8 @@
  ret
 
  EEPROM_read:
-;  sbic EECR,EEPE
-;  rjmp EEPROM_read
+  sbic EECR,EEPE
+  rjmp EEPROM_read
   out EEARH, r25
   out EEARL, r24
   sbi EECR,EERE
@@ -60,7 +64,15 @@
 badvolt:
 	inc r23
 	call EEPROM_write
+;	ldi r16, 0x77
+;	sts UDR0, r16
 	reti
 
 request:
+	lds r26, UDR0
+	;cpi r26, 0x54
+	cpi r26, 0x45
+	brne re
+	sts UDR0, r23
+	re:
 	reti
